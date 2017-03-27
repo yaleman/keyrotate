@@ -8,34 +8,37 @@
 # Run it from ~/.ssh/
 # keyrotate.sh <hostname>
 
-export FIXHOST=$1
+echo "This isn't working currently, binning."
+exit
 
-export KEYTYPE=ed25519
+FIXHOST=$1
+
+KEYTYPE="ed25519"
 
 # check a host is set
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
 	echo "Please set the host by running \"$0 <host>\""
 	exit
 fi
 
-export OLDDIR="./olddir"
-export NEWDIR="./newdir"
+OLDDIR="./olddir"
+NEWDIR="./newdir"
 
 rm -rf {$OLDDIR,$NEWDIR}
 mkdir -p {$OLDDIR,$NEWDIR}
 
-export OLDKEYFILE="$OLDDIR/$FIXHOST"
-export OLDPUBFILE="$OLDDIR/$FIXHOST.pub"
+OLDKEYFILE="$OLDDIR/$FIXHOST"
+OLDPUBFILE="$OLDDIR/$FIXHOST.pub"
 
-export NEWKEYFILE="$NEWDIR/$FIXHOST-new"
-export NEWPUBFILE="$NEWDIR/$FIXHOST-new.pub"
+NEWKEYFILE="$NEWDIR/$FIXHOST-new"
+NEWPUBFILE="$NEWDIR/$FIXHOST-new.pub"
 
 echo "Rotating key on '$FIXHOST'"
 
-if [ -f $OLDKEYFILE ]; then
+if [ -f "$OLDKEYFILE" ]; then
 	echo "Backing up the backup keys..derp?"
-	mv $OLDKEYFILE $OLDKEYFILE.`date +%Y-%m-%d-%H%M`.backup}
-	mv $OLDPUBFILE $OLDPUBFILE.`date +%Y-%m-%d-%H%M`.backup}
+	mv "$OLDKEYFILE" "$OLDKEYFILE.$(date +%Y-%m-%d-%H%M).backup"
+	mv "$OLDPUBFILE" "$OLDPUBFILE.$(date +%Y-%m-%d-%H%M).backup"
 fi
 
 # check for old keyfile
@@ -50,45 +53,45 @@ if [ -f "./$FIXHOST" ]; then
 			cp "./$FIXHOST.pub" "$OLDPUBFILE"
 
 			# ensure we're not overwriting the new keys
-			if [ -f $NEWKEYFILE ]; then
+			if [ -f "$NEWKEYFILE" ]; then
 				echo "New key file $NEWKEYFILE already exists."
 				exit
 			fi
-			if [ -f $NEWPUBFILE ]; then
+			if [ -f "$NEWPUBFILE" ]; then
 				echo "New public key $NEWPUBFILE already exists."
 				exit
 			fi
 
 			echo "Generating new keys..."
-			ssh-keygen -t $KEYTYPE -f $NEWKEYFILE || exit
+			ssh-keygen -t "$KEYTYPE" -f "$NEWKEYFILE" || exit
 			echo "Done."
 
 			echo "Copying the new key to the server..."
-			ssh -i $OLDKEYFILE $FIXHOST "echo $(cat $NEWPUBFILE) >> ~/.ssh/authorized_keys" || exit
+			ssh -i "$OLDKEYFILE" "$FIXHOST" "echo $(cat \"$NEWPUBFILE\") >> ~/.ssh/authorized_keys" || exit
 			echo "Done."
 
 			echo "Testing ssh to host..."
 			# remember to move the old keyfiles out of the way to make sure it works
 			mv "./$FIXHOST" "$OLDKEYFILE"
 			mv "./$FIXHOST.pub" "$OLDPUBFILE"
-			ssh -i $NEWKEYFILE $FIXHOST exit || exit
+			ssh -i "$NEWKEYFILE" "$FIXHOST" exit || exit
 			echo "Done."
 
 			echo "Removing old key..."
-			ssh -i $NEWKEYFILE $FIXHOST "mv ~/.ssh/authorized_keys ~/.ssh/authorized_keys.old; grep -v \"$(cat $OLDPUBFILE)\" ~/.ssh/authorized_keys.old > ~/.ssh/authorized_keys" || exit
+			ssh -i "$NEWKEYFILE" "$FIXHOST" "mv ~/.ssh/authorized_keys ~/.ssh/authorized_keys.old; grep -v \"$(cat "$OLDPUBFILE")\" ~/.ssh/authorized_keys.old > ~/.ssh/authorized_keys" || exit
 			echo "Done."
 
 			echo "Moving new key to active key..."
-			mv $NEWKEYFILE "./$FIXHOST"
-			mv $NEWPUBFILE "./$FIXHOST.pub"
+			mv "$NEWKEYFILE" "./$FIXHOST"
+			mv "$NEWPUBFILE" "./$FIXHOST.pub"
 			echo "Done."
 
 			echo "Testing login..."
-			ssh -i $FIXHOST $FIXHOST exit || exit
+			ssh -i "$FIXHOST" "$FIXHOST" exit || exit
 			echo "Done."
 
 			echo "Removing backup authorized_keys..."
-			ssh -i $FIXHOST $FIXHOST "rm ~/.ssh/authorized_keys.old"
+			ssh -i "$FIXHOST" "$FIXHOST" "rm ~/.ssh/authorized_keys.old"
 			echo "Done."
 
 			echo "Removing old/newkey directories..."
